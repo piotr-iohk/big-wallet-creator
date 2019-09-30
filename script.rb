@@ -1,0 +1,348 @@
+#!/usr/bin/ruby
+require 'httparty'
+require 'docopt'
+require 'yaml'
+
+class NewWallet
+  include HTTParty
+  attr_accessor :wid, :port
+  
+  def initialize(id = "", port = CONFIG[:port_new])
+    @wid = id
+    @port = port
+    @api = "http://localhost:#{@port}/v2"
+  end
+
+  def wallets
+    self.class.get("#{@api}/wallets")
+  end
+  
+  def wallets_ids
+    wallets.map { |w| w['id'] }
+  end
+  
+  def wallet (id = @wid)
+    self.class.get("#{@api}/wallets/#{id}")
+  end
+  
+  def wallet_balance (id = @wid)
+    wallet(id)['balance']['total']['quantity']
+  end
+
+  def addresses (id = @wid, q = "")
+    self.class.get("#{@api}/wallets/#{id}/addresses#{q}")
+  end
+  
+  def addresses_used (id = @wid)
+    addresses(id, "?state=used")
+  end
+  
+  def addresses_unused (id = @wid)
+    addresses(id, "?state=unused")
+  end
+  
+  def transactions (id = @wid, q = "")
+    self.class.get("#{@api}/wallets/#{id}/transactions#{q}")
+  end
+
+  def create_transaction(amount, address, passphrase, id = @wid)
+    self.class.post("#{@api}/wallets/#{id}/transactions", 
+    :body => { :payments => 
+                   [ { :address => address, 
+                       :amount => { :quantity => amount, 
+                                    :unit => 'lovelace' }
+                     }
+                   ], 
+               :passphrase => passphrase
+             }.to_json,
+    :headers => { 'Content-Type' => 'application/json' } )
+  end
+end
+
+class OldWallet
+  include HTTParty
+  attr_accessor :wid, :account_id, :port
+  
+  def initialize(id = "", port = CONFIG[:port_old])
+    @wid = id
+    @account_id = 2147483648
+    @port = port
+    @api = "https://localhost:#{port}/api/v1"
+  end
+  
+  def wallets
+    self.class.get("#{@api}/wallets", verify: false)
+  end
+  
+  def wallets_ids
+    wallets.map { |w| w['data']['id'] }
+  end
+  
+  def wallet (id = @wid)
+    self.class.get("#{@api}/wallets/#{id}", verify: false)
+  end
+  
+  def wallet_balance (id = @wid)
+    wallet(id)['data']['balance']
+  end
+  
+  def address_create (id = @wid, pass = "")
+    self.class.post("#{@api}/addresses", 
+      :body => { :accountIndex => @account_id,
+                 :walletId => id,
+                 :spendinPassword => pass  }.to_json, 
+      :headers => { 'Content-Type' => 'application/json' }, 
+      :verify => false )['data']['id']
+  end
+
+  def create_transaction(amount, address, pass = "", id = @wid)
+           
+    self.class.post("#{@api}/transactions", 
+      :body => { :groupingPolicy => "OptimizeForHighThroughput",
+                 :destinations => [ { :amount => amount, :address => address } ],
+                 :source => { :accountIndex => @account_id, :walletId => id },
+                 :spendinPassword => pass  }.to_json, 
+      :headers => { 'Content-Type' => 'application/json' }, 
+      :verify => false )
+  end
+  
+end
+
+def from_old_2_old (old_id1, old_id2, max_tx_spend = CONFIG[:max_tx_spend])
+  w1 = OldWallet.new old_id1
+  w2 = OldWallet.new old_id2
+  a2 = w2.address_create
+  amt = [*1..w1.wallet_balance*max_tx_spend].sample 
+  puts "Amt = #{amt}"
+  puts "Addr = #{a2}"
+  tx2_id = w1.create_transaction(amt, a2)
+  puts "From old 2 old (#{w1.wid} -> #{w2.wid} ) = tx: #{tx2_id}"
+  puts "-------------"
+end
+
+def from_new_2_new (new_id1, new_id2, max_tx_spend = CONFIG[:max_tx_spend])
+  w1 = NewWallet.new new_id1
+  w2 = NewWallet.new new_id2
+
+  a2 = w2.addresses_unused.sample['id']
+  amt = [*1..w1.wallet_balance*max_tx_spend].sample 
+  puts "Amt = #{amt}"
+  puts "Addr = #{a2}"
+  tx2_id = w1.create_transaction(amt, a2, "Secure Passphrase")
+  puts "From new 2 new (#{w1.wid} -> #{w2.wid} ) = tx: #{tx2_id}"
+  puts "-------------"
+end
+
+def from_old_2_new (old_id, new_id, max_tx_spend = CONFIG[:max_tx_spend])
+  new_wallet = NewWallet.new new_id
+  old_wallet = OldWallet.new old_id
+  adr_new = new_wallet.addresses_unused.sample['id']
+  amt = [*1..old_wallet.wallet_balance*max_tx_spend].sample
+  puts "Amt = #{amt}"
+  puts "Addr = #{adr_new}"
+  tx_id = old_wallet.create_transaction(amt, adr_new)
+  puts "From OLD -> #{tx_id}"
+  puts "------------- "
+end
+
+def from_new_2_old (new_id, old_id, max_tx_spend = CONFIG[:max_tx_spend])
+  new_wallet = NewWallet.new new_id
+  old_wallet = OldWallet.new old_id
+  adr_old = old_wallet.address_create
+  amt2 = [*1..new_wallet.wallet_balance*max_tx_spend].sample 
+  puts "Amt = #{amt2}"
+  puts "Addr = #{adr_old}"
+  tx2_id = new_wallet.create_transaction(amt2, adr_old, "Secure Passphrase")
+  puts "From NEW -> #{tx2_id}"
+  puts "-------------"
+end
+
+def new_and_old (new_id, old_id)
+  while 1 do
+    from_old_2_new old_id, new_id
+    from_new_2_old new_id, old_id
+    sleep_me CONFIG[:max_sleep]
+  end
+end
+
+def new_and_new (new_id1, new_id2)
+  while 1 do
+    from_new_2_new new_id1, new_id2
+    from_new_2_new new_id2, new_id1
+    sleep_me CONFIG[:max_sleep]
+  end
+end
+
+def old_and_old (old_id1, old_id2)
+  while 1 do
+    from_old_2_old w1, w2
+    from_old_2_old w2, w1
+    sleep_me CONFIG[:max_sleep]
+  end
+end
+
+def sleep_me max_s
+  s = [*1..max_s].sample
+  puts "sleep #{s}"
+  sleep s
+end
+
+def display_stats (wal_id, moreStats = false)
+  w = NewWallet.new wal_id
+  wal = w.wallet
+  id = wal['id']
+  status = wal['state']['status']
+
+  puts wal['name']
+  puts " ID: " + id
+  puts " Status: " + status
+  puts "    Progress: #{wal['state']['progress']['quantity']}%" if status == "restoring"
+  puts " Balance total: " + wal['balance']['total']['quantity'].to_s
+  puts " Balance available: " + wal['balance']['available']['quantity'].to_s
+  
+  if moreStats
+    addresses = w.addresses
+    used = addresses.select{ |a| a['state'] == "used" }
+    unused = addresses.select{ |a| a['state'] == "unused" }
+    puts " Addresses: " + addresses.size.to_s
+    puts "  Used: " + used.size.to_s
+    puts "  Unused: " + unused.size.to_s
+    txs = w.transactions(id)      
+    puts " Transactions: " + txs.size.to_s
+    # txs.each do |tx|
+    #   puts "#{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
+    # end
+    puts "  Status:"
+    tx_pending = txs.select{ |t| t['status'] == "pending" }
+    puts "   Pending: " + tx_pending.size.to_s
+     # tx_pending.each do |tx|
+     #   # puts tx['id'] + " - " + tx['direction']
+     #   puts "#{tx['id']} - #{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
+     # 
+     # end
+    puts "   InLedger: " + txs.select{ |t| t['status'] == "in_ledger" }.size.to_s
+    puts "  Direction:"
+    puts "   Incoming: " + txs.select{ |t| t['direction'] == "incoming" }.size.to_s
+    puts "   Outgoing: " + txs.select{ |t| t['direction'] == "outgoing" }.size.to_s
+  end  
+  puts
+end
+            
+doc = <<DOCOPT
+Big wallets creator
+
+Usage:
+  #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
+  #{__FILE__} [--conf=<co>] test <wid1> <wid2> 
+  #{__FILE__} [--conf=<co>] tx <wid1> <wid2> 
+  #{__FILE__} config read [--conf=<co>]
+  #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max_tx_spend=<t>] [--port-old=<port>] [--port-new=<port>]
+  #{__FILE__} -h | --help
+
+Args:
+  stats (new|old)     Stats for new or old wallet
+  test                Run txs between 2 wallets <wid1> <wid2>
+  tx                  Run 1 tx between 2 wallets <wid1> <wid2>
+  config              Read or gen config file
+  
+Options:
+  -h --help           Show this screen. 
+  --conf=<co>         Path to config file [default: ./config.yml]
+  --max-sleep=<sec>   Max sleep between two txs when testing [default: 5]
+  --max_tx_spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
+  --port-old=<port>   Old wallet's server port [default: 46083]
+  --port-new=<port>   New wallet's server port [default: 8090]
+             
+DOCOPT
+
+begin
+  require 'pp'
+  args = Docopt::docopt(doc)
+  # pp args
+  @config_file = args['--conf']
+  
+  default_config = {
+      :port_old => args['--port-old'],
+      :port_new => args['--port-new'],
+      :max_tx_spend => args['--max_tx_spend'], 
+      :max_sleep => args['--max-sleep'].to_i
+  }
+  if File.exists? @config_file
+    CONFIG = YAML.load_file @config_file
+  else
+    puts "Config file #{@config_file} does not exist. Using default values."
+    CONFIG = default_config
+  end
+  
+  if args['stats']
+    if args['new']
+      if args['<wid>']
+        # for single wallet
+        display_stats args['<wid>'], args['full']
+      else
+        #  for all wallets
+        w = NewWallet.new
+        w.wallets.each do |wal|
+          display_stats wal['id'], args['full']
+        end
+      end   
+    end    
+    puts "Not implemented" if args['old'] 
+  end
+  
+  if args['test']
+    wid1 = args['<wid1>']
+    wid2 = args['<wid2>']
+    
+    if wid1.size == 40 && wid2.size == 40
+      new_and_new wid1, wid2
+    elsif wid1.size == 40 && wid2.size > 40
+      new_and_old wid1, wid2 
+    elsif wid1.size > 40 && wid2.size == 40
+      new_and_old wid2, wid1
+    elsif wid1.size > 40 && wid2.size > 40
+      old_and_old wid1, wid2
+    end    
+  end
+  
+  if args['tx']
+    wid1 = args['<wid1>']
+    wid2 = args['<wid2>']
+    if wid1.size == 40 && wid2.size == 40
+      from_new_2_new wid1, wid2
+    elsif wid1.size == 40 && wid2.size > 40
+      from_new_2_old wid1, wid2 
+    elsif wid1.size > 40 && wid2.size == 40
+      from_old_2_new wid1, wid2
+    elsif wid1.size > 40 && wid2.size > 40
+      from_old_2_old wid1, wid2
+    end
+  end
+  
+  if args['config']
+    if args['read']
+      if File.exists? @config_file
+        c = YAML.load_file(@config_file)
+        c.each do |k,v|
+          puts "#{k} => #{v}"
+        end
+      else
+        puts "#{@config_file} does not exist. Try 'config gen'."
+      end
+    end
+    
+    if args['gen']
+      isOnDisk = File.exists? @config_file
+      puts "Regenerating #{@config_file}." if isOnDisk
+    
+      f = File.new(@config_file, "w")
+      f.write(default_config.to_yaml)
+      f.close
+      puts "#{@config_file} re-generated." if isOnDisk
+      puts "#{@config_file} generated." unless isOnDisk
+    end
+  end
+ 
+rescue Docopt::Exit => e
+  puts e.message
+end
