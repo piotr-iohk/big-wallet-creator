@@ -26,7 +26,7 @@ class NewWallet
   end
   
   def wallet_balance (id = @wid)
-    wallet(id)['balance']['total']['quantity']
+    wallet(id)['balance']['available']['quantity']
   end
 
   def addresses (id = @wid, q = "")
@@ -142,7 +142,7 @@ class Jormungandr
   end
 end
 
-def from_old_2_old (old_id1, old_id2, max_tx_spend = CONFIG[:max_tx_spend])
+def from_old_2_old (old_id1, old_id2, max_tx_spend = CONFIG[:max_tx_spend].to_f)
   w1 = OldWallet.new old_id1
   w2 = OldWallet.new old_id2
   a2 = w2.address_create
@@ -150,11 +150,12 @@ def from_old_2_old (old_id1, old_id2, max_tx_spend = CONFIG[:max_tx_spend])
   puts "Amt = #{amt}"
   puts "Addr = #{a2}"
   tx2_id = w1.create_transaction(amt, a2)
-  puts "From old 2 old (#{w1.wid} -> #{w2.wid} ) = tx: #{tx2_id}"
+  puts "From old 2 old (#{w1.wid} -> #{w2.wid} ) = tx: "
+  pp tx2_id
   puts "-------------"
 end
 
-def from_new_2_new (new_id1, new_id2, max_tx_spend = CONFIG[:max_tx_spend])
+def from_new_2_new (new_id1, new_id2, max_tx_spend = CONFIG[:max_tx_spend].to_f)
   w1 = NewWallet.new new_id1
   w2 = NewWallet.new new_id2
 
@@ -162,12 +163,13 @@ def from_new_2_new (new_id1, new_id2, max_tx_spend = CONFIG[:max_tx_spend])
   amt = [*1..w1.wallet_balance*max_tx_spend].sample 
   puts "Amt = #{amt}"
   puts "Addr = #{a2}"
-  tx2_id = w1.create_transaction(amt, a2, "Secure Passphrase")
-  puts "From new 2 new (#{w1.wid} -> #{w2.wid} ) = tx: #{tx2_id}"
+  tx2_id = w1.create_transaction(amt, a2, CONFIG[:pass_new])
+  puts "From new 2 new (#{w1.wid} -> #{w2.wid} ) "
+  pp tx2_id
   puts "-------------"
 end
 
-def from_old_2_new (old_id, new_id, max_tx_spend = CONFIG[:max_tx_spend])
+def from_old_2_new (old_id, new_id, max_tx_spend = CONFIG[:max_tx_spend].to_f)
   new_wallet = NewWallet.new new_id
   old_wallet = OldWallet.new old_id
   adr_new = new_wallet.addresses_unused.sample['id']
@@ -175,19 +177,21 @@ def from_old_2_new (old_id, new_id, max_tx_spend = CONFIG[:max_tx_spend])
   puts "Amt = #{amt}"
   puts "Addr = #{adr_new}"
   tx_id = old_wallet.create_transaction(amt, adr_new)
-  puts "From OLD -> #{tx_id}"
+  puts "From OLD -> "
+  pp tx_id
   puts "------------- "
 end
 
-def from_new_2_old (new_id, old_id, max_tx_spend = CONFIG[:max_tx_spend])
+def from_new_2_old (new_id, old_id, max_tx_spend = CONFIG[:max_tx_spend].to_f)
   new_wallet = NewWallet.new new_id
   old_wallet = OldWallet.new old_id
   adr_old = old_wallet.address_create
   amt2 = [*1..new_wallet.wallet_balance*max_tx_spend].sample 
   puts "Amt = #{amt2}"
   puts "Addr = #{adr_old}"
-  tx2_id = new_wallet.create_transaction(amt2, adr_old, "Secure Passphrase")
-  puts "From NEW -> #{tx2_id}"
+  tx2_id = new_wallet.create_transaction(amt2, adr_old, CONFIG[:pass_new])
+  puts "From NEW -> "
+  pp tx2_id
   puts "-------------"
 end
 
@@ -271,7 +275,7 @@ Usage:
   #{__FILE__} [--conf=<co>] test <wid1> <wid2> 
   #{__FILE__} [--conf=<co>] tx <wid1> <wid2> 
   #{__FILE__} config read [--conf=<co>]
-  #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--port-jorm=<port>] 
+  #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
   #{__FILE__} -h | --help
 
 Args:
@@ -288,6 +292,7 @@ Options:
   --max-tx-spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
   --port-old=<port>   Old wallet's server port [default: 46083]
   --port-new=<port>   New wallet's server port [default: 8090]
+  --pass-new=<pass>   Password for new wallet [default: Secure Passphrase]
   --port-jorm=<port>  Jormungandr node api port [default: 8080]
              
 DOCOPT
@@ -301,8 +306,9 @@ begin
   default_config = {
       :port_old => args['--port-old'],
       :port_new => args['--port-new'],
+      :pass_new => args['--pass-new'],      
       :port_jorm => args['--port-jorm'],
-      :max_tx_spend => args['--max-tx-spend'], 
+      :max_tx_spend => args['--max-tx-spend'].to_f, 
       :max_sleep => args['--max-sleep'].to_i
   }
   if File.exists? @config_file
