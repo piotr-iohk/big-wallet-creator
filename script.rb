@@ -108,6 +108,40 @@ class OldWallet
   
 end
 
+class Jormungandr
+  include HTTParty
+  attr_accessor :port
+  
+  def initialize(port = CONFIG[:port_jorm])
+    @port = port
+    @api = "http://localhost:#{port}/api/v0"
+  end
+  
+  def get_node_stats
+    self.class.get("#{@api}/node/stats")
+  end
+  
+  def get_settings
+    self.class.get("#{@api}/settings")
+  end
+  
+  def get_stake
+    self.class.get("#{@api}/stake")
+  end
+  
+  def get_stake_pools
+    self.class.get("#{@api}/stake_pools")
+  end
+  
+  def get_message_logs
+    self.class.get("#{@api}/fragment/logs")
+  end
+  
+  def get_leaders_logs
+    self.class.get("#{@api}/leaders/logs")
+  end
+end
+
 def from_old_2_old (old_id1, old_id2, max_tx_spend = CONFIG[:max_tx_spend])
   w1 = OldWallet.new old_id1
   w2 = OldWallet.new old_id2
@@ -187,7 +221,7 @@ def sleep_me max_s
   sleep s
 end
 
-def display_stats (wal_id, moreStats = false)
+def display_stats_wallet (wal_id, moreStats = false)
   w = NewWallet.new wal_id
   wal = w.wallet
   id = wal['id']
@@ -233,14 +267,16 @@ Big wallets creator
 
 Usage:
   #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
+  #{__FILE__} [--conf=<co>] stats jorm [stake] [logs]
   #{__FILE__} [--conf=<co>] test <wid1> <wid2> 
   #{__FILE__} [--conf=<co>] tx <wid1> <wid2> 
   #{__FILE__} config read [--conf=<co>]
-  #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max_tx_spend=<t>] [--port-old=<port>] [--port-new=<port>]
+  #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--port-jorm=<port>] 
   #{__FILE__} -h | --help
 
 Args:
   stats (new|old)     Stats for new or old wallet
+  stats jorm          Stats for Jormungandr node
   test                Run txs between 2 wallets <wid1> <wid2>
   tx                  Run 1 tx between 2 wallets <wid1> <wid2>
   config              Read or gen config file
@@ -249,9 +285,10 @@ Options:
   -h --help           Show this screen. 
   --conf=<co>         Path to config file [default: ./config.yml]
   --max-sleep=<sec>   Max sleep between two txs when testing [default: 5]
-  --max_tx_spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
+  --max-tx-spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
   --port-old=<port>   Old wallet's server port [default: 46083]
   --port-new=<port>   New wallet's server port [default: 8090]
+  --port-jorm=<port>  Jormungandr node api port [default: 8080]
              
 DOCOPT
 
@@ -264,7 +301,8 @@ begin
   default_config = {
       :port_old => args['--port-old'],
       :port_new => args['--port-new'],
-      :max_tx_spend => args['--max_tx_spend'], 
+      :port_jorm => args['--port-jorm'],
+      :max_tx_spend => args['--max-tx-spend'], 
       :max_sleep => args['--max-sleep'].to_i
   }
   if File.exists? @config_file
@@ -275,18 +313,61 @@ begin
   end
   
   if args['stats']
+    if args['jorm']
+      jorm = Jormungandr.new
+      puts "Jormungandr node stats:"
+      puts "---"
+      jorm.get_node_stats.each do |k,v|
+        puts "#{k} = #{v}"
+      end
+      puts 
+      puts "Settings:"
+      puts "---"
+      jorm.get_settings.each do |k,v|
+        if k == "fees"
+          puts "fees: "
+          v.each do |kf, vf|
+            puts "  #{kf} = #{vf}"
+          end
+        else
+          puts "#{k} = #{v}"
+        end
+      end
+      
+      if args['stake']
+        puts
+        puts "Stake: "
+        puts "---"  
+        pp jorm.get_stake      
+      end
+      
+      if args['logs']  
+        puts
+        puts "Message logs: "
+        puts "---" 
+        pp jorm.get_message_logs
+        puts
+        puts "Leader logs: "
+        puts "---" 
+        pp jorm.get_leaders_logs
+      end
+      
+    end
+    
+    
     if args['new']
       if args['<wid>']
         # for single wallet
-        display_stats args['<wid>'], args['full']
+        display_stats_wallet args['<wid>'], args['full']
       else
         #  for all wallets
         w = NewWallet.new
         w.wallets.each do |wal|
-          display_stats wal['id'], args['full']
+          display_stats_wallet wal['id'], args['full']
         end
       end   
-    end    
+    end
+        
     puts "Not implemented" if args['old'] 
   end
   
