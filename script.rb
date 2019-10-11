@@ -41,6 +41,10 @@ class NewWallet
     addresses(id, "?state=unused")
   end
   
+  def delete (id = @wid)
+    self.class.delete("#{@api}/wallets/#{id}")
+  end
+  
   def transactions (id = @wid, q = "")
     self.class.get("#{@api}/wallets/#{id}/transactions#{q}")
   end
@@ -199,7 +203,7 @@ def new_and_old (new_id, old_id)
   while 1 do
     from_old_2_new old_id, new_id
     from_new_2_old new_id, old_id
-    sleep_me CONFIG[:max_sleep]
+    sleep_me CONFIG[:max_sleep] unless CONFIG[:max_sleep] == 0
   end
 end
 
@@ -207,15 +211,15 @@ def new_and_new (new_id1, new_id2)
   while 1 do
     from_new_2_new new_id1, new_id2
     from_new_2_new new_id2, new_id1
-    sleep_me CONFIG[:max_sleep]
+    sleep_me CONFIG[:max_sleep] unless CONFIG[:max_sleep] == 0
   end
 end
 
 def old_and_old (old_id1, old_id2)
   while 1 do
-    from_old_2_old w1, w2
-    from_old_2_old w2, w1
-    sleep_me CONFIG[:max_sleep]
+    from_old_2_old old_id1, old_id2
+    from_old_2_old old_id2, old_id1
+    sleep_me CONFIG[:max_sleep] unless CONFIG[:max_sleep] == 0
   end
 end
 
@@ -248,15 +252,17 @@ def display_stats_wallet (wal_id, moreStats = false)
     txs = w.transactions(id)      
     puts " Transactions: " + txs.size.to_s
     # txs.each do |tx|
-    #   puts "#{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
+    #   puts tx['id'] + " - " + tx['direction']
+    #   # puts "#{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
     # end
     puts "  Status:"
     tx_pending = txs.select{ |t| t['status'] == "pending" }
     puts "   Pending: " + tx_pending.size.to_s
      # tx_pending.each do |tx|
-     #   # puts tx['id'] + " - " + tx['direction']
+     #   puts tx['id'] + " - " + tx['direction']
      #   puts "#{tx['id']} - #{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
-     # 
+     #   # pp tx
+     #   # puts "==="
      # end
     puts "   InLedger: " + txs.select{ |t| t['status'] == "in_ledger" }.size.to_s
     puts "  Direction:"
@@ -272,6 +278,7 @@ Big wallets creator
 Usage:
   #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
   #{__FILE__} [--conf=<co>] stats jorm [stake] [logs]
+  #{__FILE__} [--conf=<co>] del-all (new|old)
   #{__FILE__} [--conf=<co>] test <wid1> <wid2> 
   #{__FILE__} [--conf=<co>] tx <wid1> <wid2> 
   #{__FILE__} config read [--conf=<co>]
@@ -283,6 +290,7 @@ Args:
   stats jorm          Stats for Jormungandr node
   test                Run txs between 2 wallets <wid1> <wid2>
   tx                  Run 1 tx between 2 wallets <wid1> <wid2>
+  del-all             Delete all new wallets
   config              Read or gen config file
   
 Options:
@@ -316,6 +324,16 @@ begin
   else
     puts "Config file #{@config_file} does not exist. Using default values."
     CONFIG = default_config
+  end
+  
+  if args['del-all']
+    if args['new']
+      w = NewWallet.new
+      w.wallets_ids.map {|id| w.delete(id)}
+      puts "All wallets deleted."
+    end
+    
+    puts "Not implemented" if args['old'] 
   end
   
   if args['stats']
@@ -359,7 +377,6 @@ begin
       end
       
     end
-    
     
     if args['new']
       if args['<wid>']
