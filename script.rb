@@ -12,6 +12,26 @@ class NewWallet
     @port = port
     @api = "http://localhost:#{@port}/v2"
   end
+  
+  def byron_wallets
+    self.class.get("#{@api}/byron-wallets")
+  end
+  
+  def byron_wallets_ids
+    byron_wallets.map { |w| w['id'] }
+  end
+  
+  def byron_wallet (id = @wid)
+    self.class.get("#{@api}/byron-wallets/#{id}")
+  end
+  
+  def byron_delete (id = @wid)
+    self.class.delete("#{@api}/byron-wallets/#{id}")
+  end
+  
+  def byron_transactions (id = @wid, q = "")
+    self.class.get("#{@api}/byron-wallets/#{id}/transactions#{q}")
+  end
 
   def wallets
     self.class.get("#{@api}/wallets")
@@ -229,27 +249,39 @@ def sleep_me max_s
   sleep s
 end
 
-def display_stats_wallet (wal_id, moreStats = false)
+def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
   w = NewWallet.new wal_id
-  wal = w.wallet
+  wal = w.wallet if type == :shelley
+  wal = w.byron_wallet if type == :byron
   id = wal['id']
   status = wal['state']['status']
 
   puts wal['name']
   puts " ID: " + id
   puts " Status: " + status
-  puts "    Progress: #{wal['state']['progress']['quantity']}%" if status == "restoring"
+  puts "    Progress: #{wal['state']['progress']['quantity']}%" if status == "syncing"
+  puts " Tip:"
+  puts "    Height: #{wal['tip']['height']['quantity']} block"
+  puts "    Epoch: #{wal['tip']['epoch_number']}"
+  puts "    Slot: #{wal['tip']['slot_number']}"
+  
+  
+  
   puts " Balance total: " + wal['balance']['total']['quantity'].to_s
   puts " Balance available: " + wal['balance']['available']['quantity'].to_s
   
   if moreStats
-    addresses = w.addresses
-    used = addresses.select{ |a| a['state'] == "used" }
-    unused = addresses.select{ |a| a['state'] == "unused" }
-    puts " Addresses: " + addresses.size.to_s
-    puts "  Used: " + used.size.to_s
-    puts "  Unused: " + unused.size.to_s
-    txs = w.transactions(id)      
+    if (type == :shelley)
+      # addresses available obly for shelley
+      addresses = w.addresses
+      used = addresses.select{ |a| a['state'] == "used" }
+      unused = addresses.select{ |a| a['state'] == "unused" }
+      puts " Addresses: " + addresses.size.to_s
+      puts "  Used: " + used.size.to_s
+      puts "  Unused: " + unused.size.to_s
+    end
+    txs = w.transactions(id) if type == :shelley
+    txs = w.byron_transactions(id) if type == :byron          
     puts " Transactions: " + txs.size.to_s
     # txs.each do |tx|
     #   puts tx['id'] + " - " + tx['direction']
@@ -258,12 +290,12 @@ def display_stats_wallet (wal_id, moreStats = false)
     puts "  Status:"
     tx_pending = txs.select{ |t| t['status'] == "pending" }
     puts "   Pending: " + tx_pending.size.to_s
-     # tx_pending.each do |tx|
-     #   puts tx['id'] + " - " + tx['direction']
-     #   puts "#{tx['id']} - #{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
-     #   # pp tx
-     #   # puts "==="
-     # end
+     tx_pending.each do |tx|
+       puts tx['id'] + " - " + tx['direction']
+       # puts "#{tx['id']} - #{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
+       # pp tx
+       # puts "==="
+     end
     puts "   InLedger: " + txs.select{ |t| t['status'] == "in_ledger" }.size.to_s
     puts "  Direction:"
     puts "   Incoming: " + txs.select{ |t| t['direction'] == "incoming" }.size.to_s
@@ -286,12 +318,12 @@ Usage:
   #{__FILE__} -h | --help
 
 Args:
-  stats (new|old)     Stats for new or old wallet
-  stats jorm          Stats for Jormungandr node
-  test                Run txs between 2 wallets <wid1> <wid2>
-  tx                  Run 1 tx between 2 wallets <wid1> <wid2>
-  del-all             Delete all new wallets
-  config              Read or gen config file
+  stats (new|old) Stats for new wallet or old wallet
+  stats jorm            Stats for Jormungandr node
+  test                  Run txs between 2 wallets <wid1> <wid2>
+  tx                    Run 1 tx between 2 wallets <wid1> <wid2>
+  del-all               Delete all new wallets
+  config                Read or gen config file
   
 Options:
   -h --help           Show this screen. 
@@ -327,13 +359,10 @@ begin
   end
   
   if args['del-all']
-    if args['new']
-      w = NewWallet.new
-      w.wallets_ids.map {|id| w.delete(id)}
-      puts "All wallets deleted."
-    end
-    
-    puts "Not implemented" if args['old'] 
+    w = NewWallet.new
+    w.wallets_ids.map {|id| w.delete(id)} if args['new']
+    w.byron_wallets_ids.map {|id| w.byron_delete(id)} if args['old']
+    puts "All wallets deleted."   
   end
   
   if args['stats']
@@ -381,17 +410,29 @@ begin
     if args['new']
       if args['<wid>']
         # for single wallet
-        display_stats_wallet args['<wid>'], args['full']
+        display_stats_wallet args['<wid>'], :shelley, args['full']
       else
         #  for all wallets
         w = NewWallet.new
         w.wallets.each do |wal|
-          display_stats_wallet wal['id'], args['full']
+          display_stats_wallet wal['id'], :shelley, args['full']
+        end
+      end   
+    end
+    
+    if args['old']
+      if args['<wid>']
+        # for single wallet
+        display_stats_wallet args['<wid>'], :byron, args['full']
+      else
+        #  for all wallets
+        w = NewWallet.new
+        w.byron_wallets.each do |wal|
+          display_stats_wallet wal['id'], :byron, args['full']
         end
       end   
     end
         
-    puts "Not implemented" if args['old'] 
   end
   
   if args['test']
