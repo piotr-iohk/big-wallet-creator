@@ -3,6 +3,8 @@
 A helper script to aid testing of cardano-wallet-backends on top of testnets and get some stats about them.
 
 ### To start using
+1. Have [Ruby](https://www.ruby-lang.org/en/downloads/).
+2. :point_down:
 ```
 git clone https://github.com/piotr-iohk/big-wallet-creator.git
 cd big-wallet-creator
