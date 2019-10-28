@@ -12,19 +12,19 @@ bundle install
 ### To use
 
 ```
-$ ./script.rb --help
+$ ./wa --help
 
-Big wallets creator
+Wallet test aid
 
 Usage:
-  ./script.rb [--conf=<co>] stats (new|old) [full] [<wid>]
-  ./script.rb [--conf=<co>] stats jorm [stake] [logs]
-  ./script.rb [--conf=<co>] del-all (new|old)
-  ./script.rb [--conf=<co>] test <wid1> <wid2> 
-  ./script.rb [--conf=<co>] tx <wid1> <wid2> 
-  ./script.rb config read [--conf=<co>]
-  ./script.rb config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
-  ./script.rb -h | --help
+  ./wa [--conf=<co>] stats (new|old) [full] [<wid>]
+  ./wa [--conf=<co>] stats jorm [stake] [logs]
+  ./wa [--conf=<co>] del-all (new|old)
+  ./wa [--conf=<co>] test <wid1> <wid2> 
+  ./wa [--conf=<co>] tx <wid1> <wid2> 
+  ./wa config read [--conf=<co>]
+  ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
+  ./wa -h | --help
 
 Args:
   stats (new|old)     Stats for new or old wallet
