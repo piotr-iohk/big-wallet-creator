@@ -183,9 +183,9 @@ def from_new_2_new (new_id1, new_id2, max_tx_spend = CONFIG[:max_tx_spend].to_f)
   w1 = NewWallet.new new_id1
   w2 = NewWallet.new new_id2
 
-  a2 = w2.addresses_unused.sample['id']
   amt = [*1..w1.wallet_balance*max_tx_spend].sample 
   puts "Amt = #{amt}"
+  a2 = w2.addresses_unused.sample['id']
   puts "Addr = #{a2}"
   tx2_id = w1.create_transaction(amt, a2, CONFIG[:pass_new])
   puts "From new 2 new (#{w1.wid} -> #{w2.wid} ) "
@@ -265,10 +265,11 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
   puts "    Epoch: #{wal['tip']['epoch_number']}"
   puts "    Slot: #{wal['tip']['slot_number']}"
   
-  
-  
-  puts " Balance total: " + wal['balance']['total']['quantity'].to_s
-  puts " Balance available: " + wal['balance']['available']['quantity'].to_s
+  total = wal['balance']['total']['quantity']
+  available = wal['balance']['available']['quantity']
+  puts " Balance total: " + total.to_s
+  puts " Balance available: " + available.to_s
+  puts " Balance total - available: #{total.to_i - available.to_i}" 
   
   if moreStats
     if (type == :shelley)
@@ -277,8 +278,8 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
       used = addresses.select{ |a| a['state'] == "used" }
       unused = addresses.select{ |a| a['state'] == "unused" }
       puts " Addresses: " + addresses.size.to_s
-      puts "  Used: " + used.size.to_s
-      puts "  Unused: " + unused.size.to_s
+      puts "    Used: " + used.size.to_s
+      puts "    Unused: " + unused.size.to_s
     end
     txs = w.transactions(id) if type == :shelley
     txs = w.byron_transactions(id) if type == :byron          
@@ -290,12 +291,21 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
     puts "  Status:"
     tx_pending = txs.select{ |t| t['status'] == "pending" }
     puts "   Pending: " + tx_pending.size.to_s
-     tx_pending.each do |tx|
-       puts tx['id'] + " - " + tx['direction']
-       # puts "#{tx['id']} - #{tx['inserted_at']['block']['epoch_number']} - #{tx['inserted_at']['block']['slot_number']}"
-       # pp tx
-       # puts "==="
-     end
+    puts "   Sum of pending amounts: #{tx_pending.map{|tx| tx['amount']['quantity'].to_i}.sum}"
+    # puts "   Sum of pending inputs: #{tx_pending.map {|tx| tx['inputs'].map {|i| i['amount']['quantity'].to_i}.sum}.sum}"
+    tx_pending.each do |tx|
+       puts "    ID: #{tx['id']}"
+       puts "      Direction: #{tx['direction']}"
+       puts "      Inserted at: "
+       puts "         Epoch: #{tx['inserted_at']['block']['epoch_number']} - Slot: #{tx['inserted_at']['block']['slot_number']}"
+       puts "         Block: #{tx['inserted_at']['block']['height']['quantity']}"
+       puts "      Amount: #{tx['amount']['quantity']}"
+       puts "      Inputs:"
+       puts "        Sum of inputs: #{tx['inputs'].map {|i| i['amount']['quantity'].to_i}.sum}"
+       tx['inputs'].each do |input|
+         puts "          - #{input['amount']['quantity']}"
+       end
+    end
     puts "   InLedger: " + txs.select{ |t| t['status'] == "in_ledger" }.size.to_s
     puts "  Direction:"
     puts "   Incoming: " + txs.select{ |t| t['direction'] == "incoming" }.size.to_s
