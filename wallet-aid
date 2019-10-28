@@ -315,7 +315,7 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
 end
             
 doc = <<DOCOPT
-Big wallets creator
+Wallet test aid
 
 Usage:
   #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
