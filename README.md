@@ -9,7 +9,21 @@ A helper script to aid testing of cardano-wallet-backends on top of testnets and
 git clone https://github.com/piotr-iohk/big-wallet-creator.git
 cd big-wallet-creator
 bundle install
+./wa config gen      # generates script's config.yml with default values
 ```
+
+### Config
+Edit generated config file directly or by using `wa config gen...`
+```
+---
+:port_old: '46083'
+:port_new: '8090'
+:pass_new: Secure Passphrase
+:port_jorm: '8080'
+:max_tx_spend: 0.001
+:max_sleep: 0
+```
+**Note:** About `max_tx_spend`... the script uses it to select random amount for transaction (when using `tx` or `test`), like `[*1...max_tx_spend*available_balance].sample`. So if the wallet balance is big, consider having `max_tx_spend` very small (otherwise the generation of sample takes a lot of time...). On the contrary, if the balance is small, consider having `max_tx_spend` bigger (for having nicer amounts to send).
 
 ### To use
 
