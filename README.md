@@ -16,7 +16,6 @@ bundle install
 Edit generated config file directly or by using `wa config gen...`
 ```
 ---
-:port_old: '46083'
 :port_new: '8090'
 :pass_new: Secure Passphrase
 :port_jorm: '8080'
@@ -39,7 +38,7 @@ Usage:
   ./wa [--conf=<co>] test [same_addr] <wid1> <wid2> 
   ./wa [--conf=<co>] tx <wid1> <wid2> 
   ./wa config read [--conf=<co>]
-  ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
+  ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
   ./wa -h | --help
 
 Args:
@@ -55,11 +54,9 @@ Args:
 Options:
   -h --help           Show this screen. 
   --conf=<co>         Path to config file [default: ./config.yml]
-  --max-sleep=<sec>   Max sleep between two txs when testing [default: 5]
+  --max-sleep=<sec>   Max sleep between two txs when testing [default: 0]
   --max-tx-spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
-  --port-old=<port>   Old wallet's server port [default: 46083]
   --port-new=<port>   New wallet's server port [default: 8090]
   --pass-new=<pass>   Password for new wallet [default: Secure Passphrase]
   --port-jorm=<port>  Jormungandr node api port [default: 8080]
-
   ```
