@@ -36,19 +36,21 @@ Usage:
   ./wa [--conf=<co>] stats (new|old) [full] [<wid>]
   ./wa [--conf=<co>] stats jorm [stake] [logs]
   ./wa [--conf=<co>] del-all (new|old)
-  ./wa [--conf=<co>] test <wid1> <wid2> 
+  ./wa [--conf=<co>] test [same_addr] <wid1> <wid2> 
   ./wa [--conf=<co>] tx <wid1> <wid2> 
   ./wa config read [--conf=<co>]
   ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-old=<port>] [--port-new=<port>] [--pass-new=<pass>] [--port-jorm=<port>] 
   ./wa -h | --help
 
 Args:
-  stats (new|old)     Stats for new or old wallet
-  stats jorm          Stats for Jormungandr node
-  test                Run txs between 2 wallets <wid1> <wid2>
-  tx                  Run 1 tx between 2 wallets <wid1> <wid2>
-  del-all             Delete all new wallets
-  config              Read or gen config file
+  stats (new|old) Stats for new wallet or old wallet
+  stats jorm            Stats for Jormungandr node
+  test [same_addr]      Run txs back and forth between 2 wallets <wid1> <wid2>
+                        if same_addr provided uses the same address all the time, 
+                        otherwise always picks some unused one
+  tx                    Run 1 tx between 2 wallets <wid1> <wid2>
+  del-all               Delete all new wallets
+  config                Read or gen config file
   
 Options:
   -h --help           Show this screen. 
