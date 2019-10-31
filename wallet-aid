@@ -281,7 +281,7 @@ Args:
 Options:
   -h --help           Show this screen. 
   --conf=<co>         Path to config file [default: ./config.yml]
-  --max-sleep=<sec>   Max sleep between two txs when testing [default: 5]
+  --max-sleep=<sec>   Max sleep between two txs when testing [default: 0]
   --max-tx-spend=<t>  Max tx spend between two txs when testing [default: 0.00001]
   --port-old=<port>   Old wallet's server port [default: 46083]
   --port-new=<port>   New wallet's server port [default: 8090]
