@@ -283,6 +283,7 @@ Usage:
   #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
   #{__FILE__} [--conf=<co>] stats jorm [stake] [logs]
   #{__FILE__} [--conf=<co>] create (new|old) <name>
+  #{__FILE__} [--conf=<co>] create-many (new|old) <number>
   #{__FILE__} [--conf=<co>] del (new|old) <wid>
   #{__FILE__} [--conf=<co>] del-all (new|old)
   #{__FILE__} [--conf=<co>] test [same_addr] <wid1> <wid2> 
@@ -299,6 +300,7 @@ Args:
                         otherwise always picks some unused one
   tx                    Run 1 tx between 2 wallets <wid1> <wid2>
   create (new|old)      Create new wallet (Shelley) or old wallet (Byron)
+  create-many (new|old) Create many wallets (Shelley or Byron)
   del (new|old)         Delete new wallet (Shelley) or old wallet (Byron)
   del-all (new|old)     Delete all new wallets (Shelley) or old wallets (Byron)
   config                Read or gen config file
@@ -348,6 +350,28 @@ begin
       p mnemonics12
       puts "-------------------"
       pp w.create_byron_wallet mnemonics12, CONFIG[:pass], args['<name>']    
+    end 
+  end
+  
+  if args['create-many']
+    w = NewWalletBackend.new
+    how_many = args['<number>'].to_i
+    if args['new']    
+      1.upto how_many do |i|
+        mnemonics15 = BipMnemonic.to_mnemonic(bits: 164, language: 'english').split 
+        p mnemonics15
+        puts "-------------------"
+        pp w.create_wallet mnemonics15, CONFIG[:pass], "Shelley #{i}"
+      end
+    end 
+    
+    if args['old']
+      1.upto how_many do |i|
+        mnemonics12 = BipMnemonic.to_mnemonic(bits: 128, language: 'english').split
+        p mnemonics12
+        puts "-------------------"
+        pp w.create_byron_wallet mnemonics12, CONFIG[:pass], "Byron #{i}" 
+      end   
     end 
   end
   
