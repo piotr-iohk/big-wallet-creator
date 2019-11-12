@@ -101,7 +101,10 @@ class NewWalletBackend
   def transactions (id = @wid, q = "")
     self.class.get("#{@api}/wallets/#{id}/transactions#{q}")
   end
-
+  
+  def get_stake_pools
+    self.class.get("#{@api}/stake-pools")
+  end
 end
 
 # class OldWalletBackend
@@ -281,6 +284,7 @@ Wallet test aid
 
 Usage:
   #{__FILE__} [--conf=<co>] stats (new|old) [full] [<wid>]
+  #{__FILE__} [--conf=<co>] stats stake-pools
   #{__FILE__} [--conf=<co>] stats jorm [stake] [logs]
   #{__FILE__} [--conf=<co>] create (new|old) <name>
   #{__FILE__} [--conf=<co>] create-many (new|old) <number>
@@ -294,6 +298,7 @@ Usage:
 
 Args:
   stats (new|old)       Stats for new wallet (Shelley) or old wallet (Byron)
+  stats stake-pools     List stake pools via wallet backend
   stats jorm            Stats for Jormungandr node
   test [same_addr]      Run txs back and forth between 2 wallets <wid1> <wid2>
                         if same_addr provided uses the same address all the time, 
@@ -390,6 +395,19 @@ begin
   end
   
   if args['stats']
+    if args ['stake-pools']
+      w = NewWalletBackend.new
+      pools = w.get_stake_pools
+      pools.each do |s|
+        puts "#{s['id']}"
+        puts " Stake: #{s['metrics']['controlled_stake']['quantity']}"
+        puts " Produced blocks: #{s['metrics']['produced_blocks']['quantity']}"
+        puts " Performance: #{s['apparent_performance']}"
+        puts
+      end
+      puts "Total number of stake pools: #{pools.size}"
+    end
+    
     if args['jorm']
       jorm = Jormungandr.new
       puts "Jormungandr node stats:"

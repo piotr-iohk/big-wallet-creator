@@ -33,6 +33,7 @@ Wallet test aid
 
 Usage:
   ./wa [--conf=<co>] stats (new|old) [full] [<wid>]
+  ./wa [--conf=<co>] stats stake-pools
   ./wa [--conf=<co>] stats jorm [stake] [logs]
   ./wa [--conf=<co>] create (new|old) <name>
   ./wa [--conf=<co>] create-many (new|old) <number>
@@ -46,6 +47,7 @@ Usage:
 
 Args:
   stats (new|old)       Stats for new wallet (Shelley) or old wallet (Byron)
+  stats stake-pools     List stake pools via wallet backend
   stats jorm            Stats for Jormungandr node
   test [same_addr]      Run txs back and forth between 2 wallets <wid1> <wid2>
                         if same_addr provided uses the same address all the time, 
@@ -65,6 +67,5 @@ Options:
   --port-new=<port>   New wallet's server port [default: 8090]
   --pass=<pass>       Password for wallets [default: Secure Passphrase]
   --port-jorm=<port>  Jormungandr node api port [default: 8080]
-
 
   ```
