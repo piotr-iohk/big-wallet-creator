@@ -240,6 +240,8 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
   puts " Balance total: " + total.to_s
   puts " Balance available: " + available.to_s
   puts " Balance total - available: #{total.to_i - available.to_i}" 
+  puts " Delegation: #{wal['delegation']['status']}"
+  puts " Rewards: #{wal['reward']['quantity']}" 
   
   if moreStats
     if (type == :shelley)
@@ -248,6 +250,7 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
       used = addresses.select{ |a| a['state'] == "used" }
       unused = addresses.select{ |a| a['state'] == "unused" }
       puts " Addresses: " + addresses.size.to_s
+      puts "    Address poll gap: " + wal['address_pool_gap'].to_s
       puts "    Used: " + used.size.to_s
       puts "    Unused: " + unused.size.to_s
     end
