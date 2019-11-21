@@ -3,7 +3,18 @@
 A helper script to aid testing of cardano-wallet-backends on top of testnets and get some stats about them.
 
 ### To start using
-1. Have [Ruby](https://www.ruby-lang.org/en/downloads/).
+
+#### Linux
+
+1. Have [ruby](https://www.ruby-lang.org/en/downloads/), e.g.:
+
+```
+sudo apt-get install ruby
+```
+or
+```
+yum install ruby
+```
 2. :point_down:
 ```
 git clone https://github.com/piotr-iohk/big-wallet-creator.git
@@ -12,8 +23,22 @@ bundle install
 ./wa config gen      # generates script's config.yml with default values
 ```
 
+#### Windows
+1. Have [ruby](https://www.ruby-lang.org/en/downloads/) and git, e.g.:
+```
+choco install ruby
+choco install git
+```
+2. :point_down:
+```
+git clone https://github.com/piotr-iohk/big-wallet-creator.git
+cd big-wallet-creator
+bundle install
+ruby wallet-aid config gen      # generates script's config.yml with default values
+```
+
 ### Config
-Edit generated config file directly or by using `wa config gen...`
+Edit generated config file directly or by using `./wa config gen...` (`ruby wallet-aid config gen...`)
 ```
 ---
 :port_new: '8090'
