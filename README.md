@@ -65,24 +65,27 @@ Usage:
   ./wa [--conf=<co>] del (new|old) <wid>
   ./wa [--conf=<co>] del-all (new|old)
   ./wa [--conf=<co>] test [same_addr] <wid1> <wid2> 
-  ./wa [--conf=<co>] tx <wid1> <wid2> 
+  ./wa [--conf=<co>] tx <wid1> <wid2>
+  ./wa [--conf=<co>] join-sp <sp_id> <wid>  
   ./wa config read [--conf=<co>]
   ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-new=<port>] [--pass=<pass>] [--port-jorm=<port>] 
   ./wa -h | --help
 
 Args:
-  stats (new|old)       Stats for new wallet (Shelley) or old wallet (Byron)
-  stats stake-pools     List stake pools via wallet backend
-  stats jorm            Stats for Jormungandr node
-  test [same_addr]      Run txs back and forth between 2 wallets <wid1> <wid2>
-                        if same_addr provided uses the same address all the time, 
-                        otherwise always picks some unused one
-  tx                    Run 1 tx between 2 wallets <wid1> <wid2>
-  create (new|old)      Create new wallet (Shelley) or old wallet (Byron)
-  create-many (new|old) Create many wallets (Shelley or Byron)
-  del (new|old)         Delete new wallet (Shelley) or old wallet (Byron)
-  del-all (new|old)     Delete all new wallets (Shelley) or old wallets (Byron)
-  config                Read or gen config file
+  stats (new|old)        Stats for new wallet (Shelley) or old wallet (Byron)
+  stats stake-pools      List stake pools via wallet backend
+  stats jorm             Stats for Jörmungandr node
+  test [same_addr]       Run txs back and forth between 2 wallets <wid1> <wid2>
+                         if same_addr provided uses the same address all the time, 
+                         otherwise always picks some unused one
+  tx                     Run 1 tx between 2 wallets <wid1> <wid2>
+  create (new|old)       Create new wallet (Shelley) or old wallet (Byron)
+  create-many (new|old)  Create many wallets (Shelley or Byron)
+  del (new|old)          Delete new wallet (Shelley) or old wallet (Byron)
+  del-all (new|old)      Delete all new wallets (Shelley) or old wallets (Byron)
+  join-sp <sp_id> <wid>  Join stake-pool identified by stake-pool id <sp_id> 
+                         with your wallet identified by wallet id <wid>
+  config                 Read or gen config file
   
 Options:
   -h --help           Show this screen. 

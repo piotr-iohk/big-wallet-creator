@@ -14,6 +14,12 @@ class NewWalletBackend
     @api = "http://localhost:#{@port}/v2"
   end
   
+  def join_stake_pool(sp_id, passphrase, id = @wid)
+    self.class.put("#{@api}/stake-pools/#{sp_id}/wallets/#{id}", 
+    :body => { :passphrase => passphrase }.to_json,
+    :headers => { 'Content-Type' => 'application/json' } )
+  end
+  
   def create_transaction(amount, address, passphrase, id = @wid)
     self.class.post("#{@api}/wallets/#{id}/transactions", 
     :body => { :payments => 
@@ -294,24 +300,27 @@ Usage:
   #{__FILE__} [--conf=<co>] del (new|old) <wid>
   #{__FILE__} [--conf=<co>] del-all (new|old)
   #{__FILE__} [--conf=<co>] test [same_addr] <wid1> <wid2> 
-  #{__FILE__} [--conf=<co>] tx <wid1> <wid2> 
+  #{__FILE__} [--conf=<co>] tx <wid1> <wid2>
+  #{__FILE__} [--conf=<co>] join-sp <sp_id> <wid>  
   #{__FILE__} config read [--conf=<co>]
   #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-new=<port>] [--pass=<pass>] [--port-jorm=<port>] 
   #{__FILE__} -h | --help
 
 Args:
-  stats (new|old)       Stats for new wallet (Shelley) or old wallet (Byron)
-  stats stake-pools     List stake pools via wallet backend
-  stats jorm            Stats for Jormungandr node
-  test [same_addr]      Run txs back and forth between 2 wallets <wid1> <wid2>
-                        if same_addr provided uses the same address all the time, 
-                        otherwise always picks some unused one
-  tx                    Run 1 tx between 2 wallets <wid1> <wid2>
-  create (new|old)      Create new wallet (Shelley) or old wallet (Byron)
-  create-many (new|old) Create many wallets (Shelley or Byron)
-  del (new|old)         Delete new wallet (Shelley) or old wallet (Byron)
-  del-all (new|old)     Delete all new wallets (Shelley) or old wallets (Byron)
-  config                Read or gen config file
+  stats (new|old)        Stats for new wallet (Shelley) or old wallet (Byron)
+  stats stake-pools      List stake pools via wallet backend
+  stats jorm             Stats for Jörmungandr node
+  test [same_addr]       Run txs back and forth between 2 wallets <wid1> <wid2>
+                         if same_addr provided uses the same address all the time, 
+                         otherwise always picks some unused one
+  tx                     Run 1 tx between 2 wallets <wid1> <wid2>
+  create (new|old)       Create new wallet (Shelley) or old wallet (Byron)
+  create-many (new|old)  Create many wallets (Shelley or Byron)
+  del (new|old)          Delete new wallet (Shelley) or old wallet (Byron)
+  del-all (new|old)      Delete all new wallets (Shelley) or old wallets (Byron)
+  join-sp <sp_id> <wid>  Join stake-pool identified by stake-pool id <sp_id> 
+                         with your wallet identified by wallet id <wid>
+  config                 Read or gen config file
   
 Options:
   -h --help           Show this screen. 
@@ -345,6 +354,10 @@ begin
     CONFIG = default_config
   end
   
+  if args['join-sp']
+    w = NewWalletBackend.new
+    pp w.join_stake_pool args['<sp_id>'], CONFIG[:pass], args['<wid>']
+  end
   if args['create']
     w = NewWalletBackend.new
     if args['new']
