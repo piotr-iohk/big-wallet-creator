@@ -20,6 +20,12 @@ class NewWalletBackend
     :headers => { 'Content-Type' => 'application/json' } )
   end
   
+  def quit_stake_pool(sp_id, passphrase, id = @wid)
+    self.class.delete("#{@api}/stake-pools/#{sp_id}/wallets/#{id}", 
+    :body => { :passphrase => passphrase }.to_json,
+    :headers => { 'Content-Type' => 'application/json' } )
+  end
+  
   def create_transaction(amount, address, passphrase, id = @wid)
     self.class.post("#{@api}/wallets/#{id}/transactions", 
     :body => { :payments => 
@@ -243,11 +249,16 @@ def display_stats_wallet (wal_id, type = :shelley, moreStats = false)
   
   total = wal['balance']['total']['quantity']
   available = wal['balance']['available']['quantity']
-  puts " Balance total: " + total.to_s
-  puts " Balance available: " + available.to_s
-  puts " Balance total - available: #{total.to_i - available.to_i}" 
-  puts " Delegation: #{wal['delegation']['status']}"
-  puts " Rewards: #{wal['reward']['quantity']}" 
+  rewards = wal['balance']['reward']['quantity']
+  puts " Balance:"
+  puts "    Total: " + total.to_s
+  puts "    Available: " + available.to_s
+  puts "    Rewards: " + rewards.to_s
+  # puts "    Total - Available: #{total.to_i - available.to_i}" 
+  puts " Delegation: "
+  deleg_status = wal['delegation']['status']
+  puts "    Status: #{deleg_status}"
+  puts "    Target: #{wal['delegation']['target']}" if deleg_status == "delegating"
   
   if moreStats
     if (type == :shelley)
@@ -302,6 +313,7 @@ Usage:
   #{__FILE__} [--conf=<co>] test [same_addr] <wid1> <wid2> 
   #{__FILE__} [--conf=<co>] tx <wid1> <wid2>
   #{__FILE__} [--conf=<co>] join-sp <sp_id> <wid>  
+  #{__FILE__} [--conf=<co>] quit-sp <sp_id> <wid>  
   #{__FILE__} config read [--conf=<co>]
   #{__FILE__} config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-new=<port>] [--pass=<pass>] [--port-jorm=<port>] 
   #{__FILE__} -h | --help
@@ -319,6 +331,8 @@ Args:
   del (new|old)          Delete new wallet (Shelley) or old wallet (Byron)
   del-all (new|old)      Delete all new wallets (Shelley) or old wallets (Byron)
   join-sp <sp_id> <wid>  Join stake-pool identified by stake-pool id <sp_id> 
+                         with your wallet identified by wallet id <wid>
+  quit-sp <sp_id> <wid>  Quit stake-pool identified by stake-pool id <sp_id> 
                          with your wallet identified by wallet id <wid>
   config                 Read or gen config file
   
@@ -358,6 +372,12 @@ begin
     w = NewWalletBackend.new
     pp w.join_stake_pool args['<sp_id>'], CONFIG[:pass], args['<wid>']
   end
+  
+  if args['quit-sp']
+    w = NewWalletBackend.new
+    pp w.quit_stake_pool args['<sp_id>'], CONFIG[:pass], args['<wid>']
+  end
+  
   if args['create']
     w = NewWalletBackend.new
     if args['new']

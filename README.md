@@ -67,6 +67,7 @@ Usage:
   ./wa [--conf=<co>] test [same_addr] <wid1> <wid2> 
   ./wa [--conf=<co>] tx <wid1> <wid2>
   ./wa [--conf=<co>] join-sp <sp_id> <wid>  
+  ./wa [--conf=<co>] quit-sp <sp_id> <wid>  
   ./wa config read [--conf=<co>]
   ./wa config gen [--conf=<co>] [--max-sleep=<sec>] [--max-tx-spend=<t>] [--port-new=<port>] [--pass=<pass>] [--port-jorm=<port>] 
   ./wa -h | --help
@@ -84,6 +85,8 @@ Args:
   del (new|old)          Delete new wallet (Shelley) or old wallet (Byron)
   del-all (new|old)      Delete all new wallets (Shelley) or old wallets (Byron)
   join-sp <sp_id> <wid>  Join stake-pool identified by stake-pool id <sp_id> 
+                         with your wallet identified by wallet id <wid>
+  quit-sp <sp_id> <wid>  Quit stake-pool identified by stake-pool id <sp_id> 
                          with your wallet identified by wallet id <wid>
   config                 Read or gen config file
   
