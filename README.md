@@ -1,3 +1,5 @@
+Archived in favor of https://github.com/piotr-iohk/icarus
+
 # big-wallet-creator
 
 A helper script to aid testing of cardano-wallet-backends on top of testnets and get some stats about them.
